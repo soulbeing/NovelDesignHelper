@@ -1,0 +1,176 @@
+import type { PlotTemplate } from './templates';
+
+// Short scene patterns: each beat changes one piece of information, leverage, or trust.
+export const chapterTemplates: PlotTemplate[] = [
+  {
+    id: 'casual-probe', name: '顺手一问 · 试探底线', scope: 'chapter', category: '对话交锋',
+    description: '把真正的问题藏在闲聊里，通过回答的范围试探对方愿意透露多少。',
+    roles: [
+      { id: 'asker', name: '试探者', description: '想确认一个具体疑点，但暂时不愿暴露自己的信息来源。' },
+      { id: 'answerer', name: '被试探者', description: '有一条不愿透露的边界，未必在撒谎。' },
+    ],
+    relationships: [{ source: 'asker', target: 'answerer', label: '以闲聊包装真正问题' }, { source: 'answerer', target: 'asker', label: '限定回答，守住信息边界' }],
+    beats: [
+      { title: '从无害的问题切入', content: '{{asker}}在【眼前的小事】里顺口提问。\n句式示例：“你昨晚也在【地点】？那边几点关门？”\n潜台词：真正想确认的是到场时间。\n待补：这句闲聊为什么自然，试探者已知多少？', participants: ['asker', 'answerer'] },
+      { title: '回答绕过关键细节', content: '{{answerer}}只接住问题里安全的部分。\n句式示例：“那边一直关得很晚。怎么，你要过去？”\n潜台词：先确认对方目的，再决定透露多少。\n待补：哪一项信息被省略？别把省略直接当作撒谎证据。', participants: ['answerer', 'asker'] },
+      { title: '收住追问，留下新的判断', content: '{{asker}}不当场逼问，借【小动作】结束话题。\n句式示例：“没有，替人问一句。”\n待补：这一轮只新增什么怀疑或信任？后续如何验证？', participants: ['asker', 'answerer'] },
+    ],
+    twist: '变体：被试探者直接点破“你到底想问什么”；也可以坦率作答，让试探者意识到自己想多了。',
+  },
+  {
+    id: 'answer-around', name: '答非所问 · 争夺话语权', scope: 'chapter', category: '对话交锋',
+    description: '一方追问事实，另一方改谈提问资格或动机，使一句问答变成控制权争夺。',
+    roles: [{ id: 'asker', name: '追问者', description: '需要一个明确答案，不能被轻易转移话题。' }, { id: 'keeper', name: '控话者', description: '不想在此时作答，试图改变谁需要解释。' }],
+    relationships: [{ source: 'asker', target: 'keeper', label: '追问具体事实' }, { source: 'keeper', target: 'asker', label: '反问动机，转移解释责任' }],
+    beats: [
+      { title: '提出可以明确回答的问题', content: '{{asker}}询问【一项具体事实】。\n句式示例：“【物件】是你拿走的吗？”\n待补：答案为什么会影响下一步行动？', participants: ['asker', 'keeper'] },
+      { title: '不答事实，反问资格', content: '{{keeper}}改变问话对象。\n句式示例：“是谁让你来问我的？”\n潜台词：先让你交代立场，而不是让我交代行为。\n待补：控话者凭什么能让对方顾忌？', participants: ['keeper', 'asker'] },
+      { title: '坚持原题，或主动付出交换', content: '{{asker}}选择守住问题或先提供条件。\n句式示例：“这与谁让我来无关。你只需说拿了，还是没拿。”\n待补：谁让步了一小步？这场对话的控制权如何变化？', participants: ['asker', 'keeper'] },
+    ],
+    twist: '变体：反问触及真实风险，追问者决定暂缓；也可以承认自己的动机，以坦诚换来答案。',
+  },
+  {
+    id: 'half-step-retreat', name: '先退半步 · 逼出条件', scope: 'chapter', category: '对话交锋',
+    description: '先让出次要条件，看看对方仍然坚持什么，让隐藏的交易底线显形。',
+    roles: [{ id: 'negotiator', name: '让步者', description: '有一个可以放弃的次要条件，但核心利益不能动。' }, { id: 'counterpart', name: '谈判对手', description: '提出表面理由，真正需要的条件还没说出口。' }],
+    relationships: [{ source: 'negotiator', target: 'counterpart', label: '有限让步，探出真正条件' }],
+    beats: [
+      { title: '对方以表面理由拒绝', content: '{{counterpart}}以【表面困难】拒绝请求。\n句式示例：“不是不帮，实在是【理由】。”\n待补：这个理由有几分真实？', participants: ['counterpart', 'negotiator'] },
+      { title: '解决表面困难，仍留底线', content: '{{negotiator}}先让出一个能承受的条件。\n句式示例：“那【费用／时间】由我来担，你只做【小一步】。”\n待补：这次让步为什么不会直接解决全部问题？', participants: ['negotiator', 'counterpart'] },
+      { title: '新的要求暴露真正诉求', content: '{{counterpart}}追加【真实条件】，或终于接受。\n句式示例：“还有一件事，得先说清楚。”\n待补：让步者继续谈、拒绝还是另找办法？只处理本轮交换。', participants: ['counterpart', 'negotiator'] },
+    ],
+    twist: '变体：对方的困难确实真实，有限让步建立了信任；让步也可能让对方误以为可以继续加码。',
+  },
+  {
+    id: 'third-person-warning', name: '借第三人 · 敲打眼前人', scope: 'chapter', category: '对话交锋',
+    description: '谈论一个第三人的遭遇，把提醒、警告或责备递给眼前的人，同时留住表面礼貌。',
+    roles: [{ id: 'speaker', name: '说话者', description: '有话不能或不愿直接说，希望对方领会。' }, { id: 'listener', name: '眼前人', description: '听得出影射，可以装作不懂，也可以选择回应。' }, { id: 'example', name: '被提到的第三人', description: '只作为本场话题中的参照，不必实际到场。' }],
+    relationships: [{ source: 'speaker', target: 'listener', label: '借他人遭遇传递警告' }, { source: 'speaker', target: 'example', label: '引用作为话题参照' }],
+    beats: [
+      { title: '自然引出第三人的小事', content: '{{speaker}}提起{{example}}的【一次失误或遭遇】。\n句式示例：“听说{{example}}上次就是没留【凭据】，后来吃了亏。”\n待补：这件事与眼前情境相似在哪里？', participants: ['speaker', 'listener'] },
+      { title: '眼前人识别影射', content: '{{listener}}通过一句反应决定接不接这层意思。\n句式示例：“你是在提醒我，还是提醒你自己？”\n潜台词：我听懂了，但不接受你单方面训诫。\n待补：身份差与场合允许多直接的回应？', participants: ['listener', 'speaker'] },
+      { title: '留台阶，把话落在具体行动', content: '{{speaker}}收回尖锐程度，或把警告说实。\n句式示例：“只是闲话。今天这份【文件】，我们还是都看一遍。”\n待补：这次交锋促成了哪一个小行动？', participants: ['speaker', 'listener'] },
+    ],
+    twist: '变体：听者确实没有听懂；或第三人本人突然到场，使双方无法继续借话影射。',
+  },
+  {
+    id: 'joke-half-truth', name: '玩笑落地 · 真话藏半句', scope: 'chapter', category: '对话交锋',
+    description: '借玩笑试着说出真心，发现对方认真后决定承认、退回或保留分寸。',
+    roles: [{ id: 'speaker', name: '开玩笑的人', description: '想表达关心、嫉妒或不满，但害怕直接表达的后果。' }, { id: 'listener', name: '接话的人', description: '可以顺着玩笑，也可以认真核对其中的真心。' }],
+    relationships: [{ source: 'speaker', target: 'listener', label: '用玩笑降低表达风险' }, { source: 'listener', target: 'speaker', label: '认真接住，要求确认' }],
+    beats: [
+      { title: '借眼前小事抛出玩笑', content: '{{speaker}}看到【具体情境】，笑着说出半句真话。\n句式示例：“看来我今天又是最后一个知道的。”\n潜台词：我在意自己有没有被你重视。\n待补：角色平时如何开玩笑？', participants: ['speaker', 'listener'] },
+      { title: '对方没有笑过去', content: '{{listener}}停下手里的事，认真接住。\n句式示例：“你是介意我没先告诉你吗？”\n待补：这句回应是真诚还是反向施压？', participants: ['listener', 'speaker'] },
+      { title: '真心承认一点，或退回玩笑', content: '{{speaker}}选择承认一部分，或用笑掩回去。\n句式示例：“有一点。下次先给我留句话就行。”\n待补：这一轮达成什么小约定，或留下什么未说完的话？', participants: ['speaker', 'listener'] },
+    ],
+    twist: '变体：接话者也用玩笑回应，双方只能靠后续小动作确认；不要让一句玩笑立刻完成全部情感和解。',
+  },
+  {
+    id: 'repeat-keyword', name: '复述关键词 · 逼人澄清', scope: 'chapter', category: '对话交锋',
+    description: '抓住对方一句话里的模糊词，轻轻复述，让责任、条件或信息来源变得具体。',
+    roles: [{ id: 'speaker', name: '含糊表达者', description: '用集体称呼或模糊措辞降低承担责任的压力。' }, { id: 'clarifier', name: '澄清者', description: '需要明确谁、何时、什么条件，才会继续行动。' }],
+    relationships: [{ source: 'clarifier', target: 'speaker', label: '复述模糊词，要求具体化' }],
+    beats: [
+      { title: '模糊说法带过关键责任', content: '{{speaker}}把决定说得像已经得到所有人同意。\n句式示例：“大家都觉得，这件事先别追究了。”\n待补：哪一个词把责任藏起来了？', participants: ['speaker', 'clarifier'] },
+      { title: '只复述，不急着反驳', content: '{{clarifier}}抓住关键词停一拍。\n句式示例：“大家？”接着问：“具体有谁？”\n潜台词：我不接受没有来源的共识。\n待补：语气是平静核对还是故意逼问？', participants: ['clarifier', 'speaker'] },
+      { title: '具体化后，决定下一小步', content: '{{speaker}}说出来源、收回夸大，或明确拒绝提供。{{clarifier}}据此作出小决定。\n句式示例：“那就等【具体的人】到了，我们当面确认。”\n待补：信息变化影响了哪项眼前行动？', participants: ['speaker', 'clarifier'] },
+    ],
+    twist: '变体：对方确有完整名单，澄清者需要接受证据；反复追问也可能暴露澄清者自己的控制欲。',
+  },
+  {
+    id: 'hard-words-soft-hands', name: '嘴硬手软 · 行动泄底', scope: 'chapter', category: '行为互动',
+    description: '口头拒绝之后，身体已经替对方解决了一个小麻烦，让关心从动作里露出来。',
+    roles: [{ id: 'helper', name: '嘴硬的人', description: '不愿承认关心、怕丢面子或不想被索取更多，但愿意付出有限帮助。' }, { id: 'recipient', name: '被帮助的人', description: '遇到一个眼前的小困难，可以领会好意，也可以故意装作没看见。' }],
+    relationships: [{ source: 'helper', target: 'recipient', label: '口头拒绝，实际提供有限帮助' }, { source: 'recipient', target: 'helper', label: '领会动作，给对方留面子' }],
+    beats: [
+      { title: '嘴上先撇清关系', content: '{{recipient}}遇到【一个小麻烦】，{{helper}}先把话说硬。\n句式示例：“你的事，别指望我替你收拾。”\n待补：为什么这人需要先拒绝，拒绝的边界在哪里？', participants: ['helper', 'recipient'] },
+      { title: '手比话更早行动', content: '{{helper}}继续抱怨，却顺手完成【一项有限帮助】。\n动作示例：把干毛巾推过去，自己坐回原位。\n潜台词：我在意，但不承认会一直负责。\n待补：一个什么日常动作符合角色习惯？', participants: ['helper', 'recipient'] },
+      { title: '接住好意，不逼人承认', content: '{{recipient}}接受帮助，决定点破还是保留默契。\n句式示例：“知道了。毛巾明天洗好还你。”\n待补：回报或回应是什么？让帮助保持可见边界。', participants: ['recipient', 'helper'] },
+    ],
+    twist: '变体：动作来自习惯、责任或歉意，不一定是爱情；对方也可以礼貌拒绝，避免误认关系。',
+  },
+  {
+    id: 'care-through-object', name: '借物传情 · 不说破的照顾', scope: 'chapter', category: '行为互动',
+    description: '把关心藏在一件适合眼前需要的物品里，通过交接和回应留下关系变化。',
+    roles: [{ id: 'giver', name: '递物的人', description: '注意到对方的具体需要，不想公开表达或造成负担。' }, { id: 'receiver', name: '接物的人', description: '能够辨认物品与自己需求之间的联系，未必立即表达感谢。' }],
+    relationships: [{ source: 'giver', target: 'receiver', label: '借一件物品表达具体关心' }],
+    beats: [
+      { title: '先露出一个具体需要', content: '{{receiver}}在【当前活动】中遇到小困难。\n动作示例：低头揉手腕，仍继续抄写。\n待补：需要如何被看见，不靠旁白直接宣布？', participants: ['receiver', 'giver'] },
+      { title: '以普通理由交出物品', content: '{{giver}}递出【刚好合用的物品】，给一个轻描淡写的理由。\n句式示例：“多买了一份，你拿着。”\n待补：这个借口可信吗？物品如何体现观察而非昂贵？', participants: ['giver', 'receiver'] },
+      { title: '用物品或小动作回应', content: '{{receiver}}使用物品，并留下一个同样克制的回应。\n动作示例：把空杯洗净，放回{{giver}}惯常伸手的位置。\n待补：回应表示感谢、亲近还是仅仅礼貌？', participants: ['receiver', 'giver'] },
+    ],
+    twist: '变体：送错物品暴露双方并不熟悉；接物者发现物品早就为自己准备，却不当场拆穿。',
+  },
+  {
+    id: 'silent-seat-choice', name: '让出位置 · 无声站队', scope: 'chapter', category: '行为互动',
+    description: '一个座位、一段距离或一次移动，让旁人读到立场变化，却不直接宣布结盟。',
+    roles: [{ id: 'chooser', name: '做出动作的人', description: '愿意表达有限支持，但不想或不能发表正式表态。' }, { id: 'beneficiary', name: '被支持的人', description: '正处于被冷落、被排斥或需要立场支持的场合。' }, { id: 'observer', name: '在场观察者', description: '关心各方站位，会注意这次动作，也可能误读。' }],
+    relationships: [{ source: 'chooser', target: 'beneficiary', label: '用站位表达有限支持' }, { source: 'observer', target: 'chooser', label: '观察动作，重新判断立场' }],
+    beats: [
+      { title: '场合让站位变得有含义', content: '{{beneficiary}}在【饭桌／会议／队列】中受到冷落，{{observer}}留意众人反应。\n待补：为什么一个位置在此时会传递立场？', participants: ['beneficiary', 'observer', 'chooser'] },
+      { title: '一处小移动改变关系画面', content: '{{chooser}}调整自己的位置。\n动作示例：把空椅拉到身边，对{{beneficiary}}说：“这里有位。”\n待补：这会给做动作的人带来什么小风险？', participants: ['chooser', 'beneficiary', 'observer'] },
+      { title: '众人回应，但支持有边界', content: '{{beneficiary}}坐下或拒绝；{{observer}}改变称呼、话题或态度。\n待补：这个动作只承诺了什么？不要把一次让座当作永久站队。', participants: ['beneficiary', 'observer', 'chooser'] },
+    ],
+    twist: '变体：移动只是出于礼貌，观察者误读；或被支持的人拒绝占位，表达不愿连累对方。',
+  },
+  {
+    id: 'paused-hand', name: '停手半拍 · 露出隐瞒', scope: 'chapter', category: '行为互动',
+    description: '一句话使惯常动作短暂中断，观察者只获得一个疑点，再用小问题核对。',
+    roles: [{ id: 'observer', name: '留意动作的人', description: '熟悉对方的一项习惯，能观察到变化，但仍需要核实原因。' }, { id: 'concealer', name: '动作停顿的人', description: '被话题触动，可能隐瞒、紧张、走神或想起了别的事。' }],
+    relationships: [{ source: 'observer', target: 'concealer', label: '注意习惯变化，保留疑点' }],
+    beats: [
+      { title: '先建立一个自然的惯常动作', content: '{{concealer}}边做【惯常小动作】边与{{observer}}交谈。\n动作示例：一边泡茶，一边按固定顺序摆杯子。\n待补：观察者为什么知道这个习惯？', participants: ['concealer', 'observer'] },
+      { title: '触及话题，动作短暂中断', content: '{{observer}}提到【某人／某物／时间点】，{{concealer}}停手一拍，随后继续。\n待补：动作变化是什么？保留紧张、回忆等其他解释，不能据此认定撒谎。', participants: ['observer', 'concealer'] },
+      { title: '用普通问题做一次核对', content: '{{observer}}不宣布识破，只追加一个可回答的小问题。\n句式示例：“你以前见过【这个东西】？”\n待补：回答是否增加或减少疑点？本场只留下多少信息？', participants: ['observer', 'concealer'] },
+    ],
+    twist: '变体：停顿来自旧伤或疲惫，提醒观察者不要过度推断；真正的隐瞒也可能没有任何动作异常。',
+  },
+  {
+    id: 'small-help-small-price', name: '帮完再提 · 小恩换条件', scope: 'chapter', category: '行为互动',
+    description: '当场解决一个小难题，随后提出有限请求，让普通帮助变成一次边界谈判。',
+    roles: [{ id: 'helper', name: '帮忙者', description: '愿意帮忙，也确实需要对方回报一个小行动。' }, { id: 'recipient', name: '受助者', description: '可以感谢、拒绝额外条件或提出对等替代。' }],
+    relationships: [{ source: 'helper', target: 'recipient', label: '提供小帮助，提出有限回报' }, { source: 'recipient', target: 'helper', label: '接受好意，协商请求边界' }],
+    beats: [
+      { title: '先解决眼前小困难', content: '{{helper}}帮助{{recipient}}处理【当场的小麻烦】。\n动作示例：替对方捡回滚到柜底的钥匙。\n待补：帮助花费多少，而不是无端要求巨大回报？', participants: ['helper', 'recipient'] },
+      { title: '顺势提出一个明确条件', content: '{{helper}}趁道谢时提出小请求。\n句式示例：“那帮我把【东西】带过去，算扯平？”\n待补：这是玩笑、诚恳交换还是隐性施压？', participants: ['helper', 'recipient'] },
+      { title: '接受、拒绝或换一种回报', content: '{{recipient}}确认条件，或者提出能承担的替代。\n句式示例：“带过去可以，替你解释那件事不行。”\n待补：本轮如何结清？只处理这次小交换。', participants: ['recipient', 'helper'] },
+    ],
+    twist: '变体：帮忙者发现请求超出对方能力，主动收回；若要继续发展为长期控制，可再接入跨章的“人情债”模板。',
+  },
+  {
+    id: 'third-person-interruption', name: '第三人插话 · 打断与转向', scope: 'chapter', category: '场景转折',
+    description: '两人的话将要触到关键处时，第三人一句普通插话改变节奏，暴露新的偏向或留下未说完的话。',
+    roles: [{ id: 'first', name: '准备说破的人', description: '即将问出或透露一条关键内容。' }, { id: 'second', name: '被接话的人', description: '等待答案，或正处于被逼问的时刻。' }, { id: 'third', name: '插话者', description: '可能好心解围、故意打断，也可能只是有现实事务。' }],
+    relationships: [{ source: 'first', target: 'second', label: '关键话将要说出口' }, { source: 'third', target: 'first', label: '插话改变谈话节奏' }, { source: 'third', target: 'second', label: '让对方获得回应或退场机会' }],
+    beats: [
+      { title: '话题逼近一句关键话', content: '{{first}}对{{second}}准备说出【关键半句话】。\n句式示例：“那天其实我看见——”\n待补：眼前谈话为什么已经到达这个点？', participants: ['first', 'second'] },
+      { title: '第三人用现实小事打断', content: '{{third}}插入一句与场景有关的话。\n句式示例：“车到了。你们谁先走？”\n待补：插话是有意还是无意？理由必须实际存在。', participants: ['third', 'first', 'second'] },
+      { title: '一个接话动作决定余韵', content: '{{second}}趁机离开、追问，或让{{first}}改天再说；{{first}}注意{{third}}的反应。\n待补：本场立刻改变了哪个选择？未说完的话可以就此失效，不必拖成大悬念。', participants: ['first', 'second', 'third'] },
+    ],
+    twist: '变体：被接话的人不接受打断，坚持把话说完；插话者的善意也可能造成新的误解。',
+  },
+  {
+    id: 'wrong-object-slip', name: '递错物件 · 当场露馅', scope: 'chapter', category: '场景转折',
+    description: '一句口头否认与眼前的物品知识不一致，被对方抓住一个可以立即核对的小漏洞。',
+    roles: [{ id: 'concealer', name: '否认接触的人', description: '声称未见过、未使用过或不认识某物，理由可能正当也可能不正当。' }, { id: 'observer', name: '核对者', description: '掌握这件物品的一个具体特征，可以验证动作含义。' }],
+    relationships: [{ source: 'concealer', target: 'observer', label: '口头否认，动作暴露熟悉度' }, { source: 'observer', target: 'concealer', label: '用物品细节做有限核对' }],
+    beats: [
+      { title: '先出现一句可验证的否认', content: '{{concealer}}声称没接触过【具体物品】。\n句式示例：“这盒子，我今天第一次见。”\n待补：为什么这项否认与眼前事件相关？', participants: ['concealer', 'observer'] },
+      { title: '动作显示不该有的熟悉', content: '{{concealer}}顺手操作物品时略过了只有熟悉者才知道的步骤。\n动作示例：不试钥匙，直接按住暗扣打开盖子。\n待补：是否有其他合理来源让其知道用法？', participants: ['concealer', 'observer'] },
+      { title: '指出矛盾，给解释机会', content: '{{observer}}当场核对。\n句式示例：“第一次见，怎么知道扣子在底下？”\n待补：对方解释、改口还是承认一部分？只澄清本轮接触事实。', participants: ['observer', 'concealer'] },
+    ],
+    twist: '变体：对方见过同款物品，核对者判断错误；漏洞可以揭开一个小谎，不必自动指向幕后大阴谋。',
+  },
+  {
+    id: 'one-line-reversal', name: '一句接不住 · 小型反击', scope: 'chapter', category: '场景转折',
+    description: '对方以一句话轻视或排除别人，回应者用一个可当场验证的细节把判断还回去。',
+    roles: [{ id: 'dismisser', name: '轻视者', description: '凭身份、经验或印象下判断，有可能无心冒犯。' }, { id: 'responder', name: '回应者', description: '掌握一个真实细节，想纠正当前判断而非彻底羞辱对方。' }, { id: 'witness', name: '在场者', description: '能验证回应，或决定这轮交锋如何收场。' }],
+    relationships: [{ source: 'dismisser', target: 'responder', label: '凭印象轻视或排除' }, { source: 'responder', target: 'dismisser', label: '用一个可验证细节反击' }, { source: 'witness', target: 'responder', label: '现场验证，决定后续态度' }],
+    beats: [
+      { title: '轻视落在一项具体判断上', content: '{{dismisser}}当着{{witness}}排除{{responder}}的意见。\n句式示例：“这件事，你恐怕连【关键名词】都没听过。”\n待补：为何会产生这个错误印象？', participants: ['dismisser', 'responder', 'witness'] },
+      { title: '不夸实力，只指出一个细节', content: '{{responder}}用一句具体事实回应。\n句式示例：“听过。你手里那份，第二页还漏了【一个条件】。”\n待补：能力此前如何建立，事实如何当场查证？', participants: ['responder', 'dismisser', 'witness'] },
+      { title: '验证后，给下一步或台阶', content: '{{witness}}核对，{{dismisser}}改口、嘴硬或认真追问。{{responder}}把注意力拉回当前事。\n句式示例：“先把漏项补上，我们再谈。”\n待补：只赢回哪一点发言权？不要一次反击解决全部地位问题。', participants: ['witness', 'dismisser', 'responder'] },
+    ],
+    twist: '变体：双方都有遗漏，短交锋促成合作；想扩大为完整逆袭剧情，可再接入跨章的“公开反击”模板。',
+  },
+];

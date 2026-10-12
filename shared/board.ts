@@ -17,21 +17,22 @@ export const boardSchema = z.object({
   nodes: z.array(z.object({
     id,
     type: z.literal('story'),
-    position: z.object({ x: finite, y: finite }),
-    data: z.object({
+    position: z.strictObject({ x: finite, y: finite }),
+    data: z.strictObject({
       kind: z.enum(kinds),
       title: z.string().max(200),
       content: z.string().max(20000),
       act: z.string().max(100),
     }),
-  })).max(1500),
+  }).strict()).max(1500),
   edges: z.array(z.object({
     id,
     source: id,
     target: id,
     label: z.string().max(200).optional(),
-  })).max(5000),
-}).superRefine((board, ctx) => {
+  }).strict()).max(5000),
+  extensions: z.record(z.string(), z.json()).optional(),
+}).strict().superRefine((board, ctx) => {
   const ids = new Set(board.nodes.map((node) => node.id));
   if (ids.size !== board.nodes.length || new Set(board.edges.map((edge) => edge.id)).size !== board.edges.length) {
     ctx.addIssue({ code: 'custom', message: '卡片或连线 ID 重复' });

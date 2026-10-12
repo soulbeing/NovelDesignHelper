@@ -1,11 +1,15 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Background, BackgroundVariant, Controls, MiniMap, ReactFlow, MarkerType, useReactFlow, type Connection, type NodeChange, type Edge } from '@xyflow/react';
-import { ArrowDownToLine, ArrowRight, Check, ChevronDown, FileJson, Focus, GitBranch, LayoutGrid, LoaderCircle, Menu, Plus, Redo2, Search, Sparkles, Trash2, Undo2, Upload, X } from 'lucide-react';
-import { boardSchema, kindInfo, kinds, toMarkdown, type Board, type Kind } from '../shared/board';
+import { ArrowDownToLine, ArrowRight, BookOpen, Check, ChevronDown, FileJson, Focus, GitBranch, LayoutGrid, LoaderCircle, Menu, Plus, Redo2, Search, Sparkles, Trash2, Undo2, Upload, X } from 'lucide-react';
+import { kindInfo, kinds, toMarkdown, type Board, type Kind } from '../shared/board';
+import { readDocument, serializeDocument } from '../shared/project';
 import { StoryNode, kindIcons, type StoryNodeType } from './StoryNode';
 import { useBoard } from './useBoard';
 import ChatPanel from './ChatPanel';
 import { createId } from './id';
+import TemplateLibrary from './TemplateLibrary';
+import { appendProposal } from '../shared/ai';
+import ProjectPanel from './ProjectPanel';
 
 const nodeTypes = { story: StoryNode };
 const colors: Record<Kind, string> = { plot: '#739681', character: '#b99d76', world: '#8e9fba', note: '#bda85a' };
@@ -18,7 +22,19 @@ function download(name: string, content: string, type: string) {
 }
 
 export default function App() {
-  const { board, status, error, recovery, setRecovery, update, checkpoint, undo, redo, retry, canUndo, canRedo } = useBoard();
+  const [projectId, setProjectId] = useState(() => {
+    try { const saved = localStorage.getItem('novel-design-helper:active-project'); return saved && /^[a-zA-Z0-9_-]{1,80}$/.test(saved) ? saved : 'legacy-board'; }
+    catch { return 'legacy-board'; }
+  });
+  return <BoardEditor key={projectId} projectId={projectId} onSelect={(id) => {
+    try { localStorage.setItem('novel-design-helper:active-project', id); } catch { /* Selection can still work without browser storage. */ }
+    setProjectId(id);
+  }} />;
+}
+
+function BoardEditor({ projectId, onSelect }: { projectId: string; onSelect: (id: string) => void }) {
+  const { board, project, status, error, recovery, setRecovery, update, checkpoint, undo, redo, retry, canUndo, canRedo,
+    flush, synchronize, restore, refreshProject, getDocument, importDocument } = useBoard(projectId);
   const flow = useReactFlow<StoryNodeType>();
   const [selected, setSelected] = useState<{ type: 'node' | 'edge'; id: string } | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -28,6 +44,8 @@ export default function App() {
   const [notice, setNotice] = useState('');
   const [help, setHelp] = useState(false);
   const [chatOpen, setChatOpen] = useState(false);
+  const [templatesOpen, setTemplatesOpen] = useState(false);
+  const [projectsOpen, setProjectsOpen] = useState(false);
   const importInput = useRef<HTMLInputElement>(null);
   const editingNode = board?.nodes.find((node) => selected?.type === 'node' && node.id === selected.id);
   const editingEdge = board?.edges.find((edge) => selected?.type === 'edge' && edge.id === selected.id);
@@ -47,16 +65,17 @@ export default function App() {
   }, [selected, update]);
   useEffect(() => {
     const listener = (event: KeyboardEvent) => {
+      if (templatesOpen || projectsOpen) return;
       const target = event.target as HTMLElement;
       if (target.closest('input, textarea, select, [contenteditable="true"]')) return;
       if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'z') { event.preventDefault(); if (event.shiftKey) redo(); else undo(); }
       if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'y') { event.preventDefault(); redo(); }
       if (event.key === 'Delete' || event.key === 'Backspace') { event.preventDefault(); removeSelected(); }
-      if (event.key === 'Escape') { setSelected(null); setExportOpen(false); setHelp(false); }
+      if (event.key === 'Escape') { setSelected(null); setExportOpen(false); setHelp(false); setTemplatesOpen(false); }
     };
     window.addEventListener('keydown', listener);
     return () => window.removeEventListener('keydown', listener);
-  }, [undo, redo, removeSelected]);
+  }, [undo, redo, removeSelected, templatesOpen, projectsOpen]);
   useEffect(() => {
     const listener = (event: BeforeUnloadEvent) => { if (status === 'saving' || status === 'offline') event.preventDefault(); };
     window.addEventListener('beforeunload', listener);
@@ -81,6 +100,17 @@ export default function App() {
       return change?.position ? { ...node, position: change.position } : node;
     }) }), false);
   }, [update]);
+  const insertTemplate = (fragment: Board) => {
+    if (!board) return;
+    try {
+      const next = appendProposal(board, fragment, createId);
+      const inserted = next.nodes.slice(board.nodes.length);
+      update(() => next);
+      setTemplatesOpen(false); setSidebarOpen(false); setChatOpen(false); setSelected(null);
+      setNotice(`已插入「${fragment.title}」，点击人物与情节卡补充细节。`);
+      setTimeout(() => void flow.fitView({ nodes: inserted, padding: 0.18, duration: 400 }), 100);
+    } catch { setNotice('插入失败：画布容量不足或模板结构无效，当前内容已保留。'); }
+  };
   const onConnect = (connection: Connection) => {
     if (!connection.source || !connection.target || connection.source === connection.target) return;
     if (board?.edges.some((edge) => edge.source === connection.source && edge.target === connection.target)) { setNotice('这两张卡片已有相同方向的连线。'); return; }
@@ -93,9 +123,9 @@ export default function App() {
     if (!file) return;
     if (file.size > 2 * 1024 * 1024) { setNotice('文件超过 2 MB 限制。'); return; }
     try {
-      const imported = boardSchema.parse(JSON.parse(await file.text()));
+      const imported = readDocument(JSON.parse(await file.text()), projectId);
       if (!window.confirm('导入将替换当前故事板。可通过撤销恢复；建议先导出 JSON 备份。继续导入？')) return;
-      update(() => imported); setSelected(null); setNotice('故事板已导入');
+      importDocument(imported); setSelected(null); setNotice('故事板已导入');
       setTimeout(() => void flow.fitView({ padding: 0.2, duration: 350 }), 100);
     } catch { setNotice('导入失败：请选择本应用导出的有效 JSON 故事板。'); }
     finally { if (importInput.current) importInput.current.value = ''; }
@@ -109,11 +139,11 @@ export default function App() {
   const exportFile = (format: 'md' | 'json') => {
     if (!board) return;
     const name = board.title.replace(/[<>:"/\\|?*\u0000-\u001f]/g, '_');
-    download(`${name}.${format}`, format === 'md' ? toMarkdown(board) : JSON.stringify(boardSchema.parse(board), null, 2), format === 'md' ? 'text/markdown;charset=utf-8' : 'application/json');
+    download(`${name}.${format}`, format === 'md' ? toMarkdown(board) : serializeDocument(getDocument()!), format === 'md' ? 'text/markdown;charset=utf-8' : 'application/json');
     setExportOpen(false); setNotice(format === 'md' ? '已导出 AI 可读的故事蓝图' : '已导出完整故事板备份');
   };
 
-  if (!board) return <div className="loading-screen"><div className="brand-symbol"><GitBranch /></div><h1>故事织场</h1><p>{error || '正在展开你的故事……'}</p>{status === 'loading' ? <LoaderCircle className="spinning" /> : <button className="primary-button" onClick={retry}>重新连接</button>}</div>;
+  if (!board) return <div className="loading-screen"><div className="brand-symbol"><GitBranch /></div><h1>故事织场</h1><p>{error || '正在展开你的故事……'}</p>{status === 'loading' ? <LoaderCircle className="spinning" /> : <><button className="primary-button" onClick={retry}>重新连接</button><button onClick={() => onSelect('legacy-board')}>打开原故事板</button></>}</div>;
   const visibleNodes = board.nodes.filter((node) => (filter === 'all' || node.data.kind === filter) && `${node.data.title} ${node.data.content}`.toLowerCase().includes(query.toLowerCase()));
   const displayNodes: StoryNodeType[] = board.nodes.map((node) => ({ ...node, selected: selected?.type === 'node' && selected.id === node.id }));
   const displayEdges: Edge[] = board.edges.map((edge) => ({ ...edge, type: 'smoothstep', selected: selected?.type === 'edge' && selected.id === edge.id, style: connectionStyle, markerEnd: { type: MarkerType.ArrowClosed, color: connectionStyle.stroke }, labelStyle: { fill: '#68786f', fontSize: 11 }, labelBgStyle: { fill: '#f7f7f2', fillOpacity: 0.95 }, labelBgPadding: [7, 4] }));
@@ -123,7 +153,8 @@ export default function App() {
       <div className="brand"><div className="brand-symbol"><GitBranch size={21} /></div><span>故事织场<small>STORY WEAVE</small></span></div>
       <div className="header-divider" />
       <div className="project-heading"><span className="breadcrumb">我的故事 / 故事板</span><input aria-label="故事名称" maxLength={120} value={board.title} onChange={(event) => update((previous) => ({ ...previous, title: event.target.value.trim() ? event.target.value : '未命名故事' }))} /></div>
-      <div className={`save-status ${status}`} title={error || '修改后自动保存'}>{status === 'saved' ? <Check size={14} /> : status === 'saving' ? <LoaderCircle size={14} className="spinning" /> : <span className="status-dot" />}<span>{status === 'saved' ? '已保存' : status === 'saving' ? '保存中' : '未同步'}</span></div>
+      <div className={`save-status ${status}`} title={error || '修改后自动保存到本机服务器'}>{status === 'saved' ? <Check size={14} /> : status === 'saving' ? <LoaderCircle size={14} className="spinning" /> : <span className="status-dot" />}<span>{status === 'saved' ? '本地已保存' : status === 'saving' ? '本地保存中' : '本地未保存'}</span></div>
+      <button className="project-toggle" onClick={() => setProjectsOpen(true)} title={project?.syncError || '项目、GitHub 同步与版本历史'}><GitBranch size={16} /><span>{project?.syncing ? '上传中' : project?.syncError ? '同步需处理' : project?.connected ? project.dirty || status !== 'saved' ? '等待上传' : 'GitHub 已同步' : '项目与版本'}</span></button>
       <button aria-label="AI 搭档" className={`ai-toggle ${chatOpen ? 'active' : ''}`} onClick={() => setChatOpen(!chatOpen)}><Sparkles size={16} /><span>AI 搭档</span></button>
       <div className="export-wrap"><button className="primary-button" onClick={() => setExportOpen(!exportOpen)}><ArrowDownToLine size={16} /><span>导出故事</span><ChevronDown size={14} /></button>{exportOpen && <><button className="menu-backdrop" aria-label="关闭导出菜单" onClick={() => setExportOpen(false)} /><div className="export-menu"><button onClick={() => exportFile('md')}><Sparkles size={17} /><span>AI 写作蓝图<small>Markdown · 情节、细节与关系</small></span></button><button onClick={() => exportFile('json')}><FileJson size={17} /><span>故事板备份<small>JSON · 保留全部位置与连线</small></span></button></div></>}</div>
     </header>
@@ -135,6 +166,7 @@ export default function App() {
         <details className="premise-editor"><summary>故事核心 <ChevronDown size={12} /></summary><textarea aria-label="故事核心" rows={3} maxLength={10000} placeholder="用一句话描述你的故事…" value={board.premise} onChange={(event) => update((previous) => ({ ...previous, premise: event.target.value }))} /></details>
         <div className="sidebar-section-title">添加到画布 <Plus size={14} /></div>
         <div className="add-list">{kinds.map((kind) => { const Icon = kindIcons[kind]; return <button key={kind} onClick={() => addNode(kind)}><span className={`kind-icon ${kind}`}><Icon size={17} /></span><span>{kindInfo[kind].label}<small>{kindInfo[kind].subtitle}</small></span><Plus size={14} className="add-plus" /></button>; })}</div>
+        <button className="template-launch" onClick={() => setTemplatesOpen(true)}><BookOpen size={17} /><span>剧情模板<small>章内小节拍 · 跨章大结构</small></span><ArrowRight size={14} /></button>
         <div className="sidebar-section-title">故事元素 <span>{board.nodes.length}</span></div>
         <label className="search-field"><Search size={15} /><input aria-label="搜索故事元素" placeholder="寻找一段情节、一个人物…" value={query} onChange={(event) => setQuery(event.target.value)} /></label>
         <div className="filter-tabs">{(['all', ...kinds] as const).map((kind) => <button key={kind} className={filter === kind ? 'active' : ''} onClick={() => setFilter(kind)}>{kind === 'all' ? '全部' : kindInfo[kind].label}</button>)}</div>
@@ -161,9 +193,11 @@ export default function App() {
     </div>
     <footer className="statusbar"><span><span className="status-dot" />{board.nodes.filter((node) => node.data.kind === 'plot').length} 个情节 · {board.nodes.filter((node) => node.data.kind === 'character').length} 位人物 · {board.edges.length} 条关系</span><span>拖动画布移动视野 · 滚轮缩放 · 点击卡片编辑</span><span>让故事有迹可循</span></footer>
     {error && <div className="error-banner"><span>{error}</span><button onClick={retry}>重试</button></div>}
-    {recovery && <div className="recovery-banner"><span>发现本机尚未同步的草稿。</span><button onClick={() => { update(() => recovery); setRecovery(null); setNotice('已恢复本机草稿，可撤销回到服务器版本。'); }}>恢复草稿</button><button onClick={() => { download('本机未同步草稿.json', JSON.stringify(recovery, null, 2), 'application/json'); }}>下载备份</button><button aria-label="暂时忽略草稿" onClick={() => setRecovery(null)}><X size={15} /></button></div>}
+    {recovery && <div className="recovery-banner"><span>发现本机尚未保存到服务器的草稿。</span><button onClick={() => { importDocument(recovery); setRecovery(null); setNotice('已恢复本机草稿，可撤销回到服务器版本。'); }}>恢复草稿</button><button onClick={() => { download('本机未同步草稿.json', serializeDocument(recovery), 'application/json'); }}>下载备份</button><button aria-label="暂时忽略草稿" onClick={() => setRecovery(null)}><X size={15} /></button></div>}
     {notice && <div role="status" className="toast"><Check size={17} />{notice}</div>}
     <input ref={importInput} type="file" accept=".json,application/json" hidden onChange={(event) => void importBoard(event.target.files?.[0])} />
+    {templatesOpen && <TemplateLibrary board={board} onClose={() => setTemplatesOpen(false)} onInsert={insertTemplate} />}
+    {projectsOpen && <ProjectPanel project={project} projectId={projectId} flush={flush} refresh={refreshProject} sync={synchronize} restore={restore} onSelect={(id) => { setProjectsOpen(false); onSelect(id); }} onClose={() => setProjectsOpen(false)} />}
     {help && <div className="modal-backdrop" onClick={() => setHelp(false)}><section className="help-modal" role="dialog" aria-modal="true" aria-label="画布使用指南" onClick={(event) => event.stopPropagation()}><button className="icon-button modal-close" aria-label="关闭指南" onClick={() => setHelp(false)}><X size={18} /></button><GitBranch size={28} /><h2>从一个念头，到一整个故事</h2><p>① 从左侧添加情节、人物、设定或备注。</p><p>② 拖动卡片安排结构，点击卡片编辑细节。</p><p>③ 从右侧圆点拖到另一张卡片的左侧圆点建立关系。触摸屏也可以依次点击两个圆点。</p><p>④ 点击连线写下因果、伏笔或人物关系。</p><p>⑤ 导出 Markdown，将故事蓝图交给 AI。导出 JSON 用于备份或迁移。</p><p>手机和 iPad：单指拖动画布，双指缩放；点左上角菜单添加元素。建议 iPad 横屏创作。</p><button className="primary-button" onClick={() => setHelp(false)}>开始编织 <ArrowRight size={16} /></button></section></div>}
   </div>;
 }

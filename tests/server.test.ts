@@ -19,7 +19,7 @@ test('API persists valid boards, rejects corrupt updates, and returns JSON 404',
     const updated = { ...example, title: '测试保存' };
     const put = (value: unknown) => fetch(`${base}/api/board`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(value) });
     assert.equal((await put(updated)).status, 200);
-    assert.equal(JSON.parse(await readFile(path.join(directory, 'board.json'), 'utf8')).title, '测试保存');
+    assert.equal(JSON.parse(await readFile(path.join(directory, 'projects', 'legacy-board.json'), 'utf8')).document.board.title, '测试保存');
     assert.equal((await put({ title: 'broken' })).status, 400);
     assert.equal((await (await fetch(`${base}/api/board`)).json()).title, '测试保存');
     assert.equal((await fetch(`${base}/api/missing`)).status, 404);

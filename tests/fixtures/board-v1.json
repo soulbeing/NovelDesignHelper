@@ -1,0 +1,18 @@
+{
+  "version": 1,
+  "title": "兼容性样本 · 星河小镇",
+  "premise": "这是一份合成测试故事，不包含私人写作。",
+  "nodes": [
+    { "id": "person", "type": "story", "position": { "x": -250.5, "y": 30 }, "data": { "kind": "character", "title": "旅人", "content": "愿望：找到家。\n秘密：记得每一颗星。", "act": "主角" } },
+    { "id": "world", "type": "story", "position": { "x": 0, "y": -400 }, "data": { "kind": "world", "title": "小镇", "content": "黎明前星星落在井里。", "act": "" } },
+    { "id": "plot-a", "type": "story", "position": { "x": 350, "y": 0 }, "data": { "kind": "plot", "title": "取水", "content": "井中有一张旧地图。", "act": "第一幕" } },
+    { "id": "plot-b", "type": "story", "position": { "x": 700, "y": 0 }, "data": { "kind": "plot", "title": "归来", "content": "路的尽头仍是小镇。", "act": "结局" } },
+    { "id": "note", "type": "story", "position": { "x": 350, "y": 450 }, "data": { "kind": "note", "title": "", "content": "", "act": "" } }
+  ],
+  "edges": [
+    { "id": "a", "source": "person", "target": "plot-a", "label": "参与" },
+    { "id": "b", "source": "plot-a", "target": "plot-b", "label": "推动" },
+    { "id": "c", "source": "plot-b", "target": "plot-a", "label": "循环" },
+    { "id": "d", "source": "plot-a", "target": "note" }
+  ]
+}
